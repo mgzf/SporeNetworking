@@ -1,0 +1,6 @@
+framework module Pods_SporeNetworking {
+  umbrella header "Pods-SporeNetworking-umbrella.h"
+
+  export *
+  module * { export * }
+}

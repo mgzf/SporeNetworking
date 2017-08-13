@@ -1,0 +1,6 @@
+framework module SporeNetworking {
+  umbrella header "SporeNetworking-umbrella.h"
+
+  export *
+  module * { export * }
+}

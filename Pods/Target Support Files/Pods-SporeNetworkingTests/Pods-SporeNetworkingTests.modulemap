@@ -1,0 +1,6 @@
+framework module Pods_SporeNetworkingTests {
+  umbrella header "Pods-SporeNetworkingTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
