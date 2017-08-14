@@ -17,23 +17,14 @@ open class Session {
         self.callbackQueue = callbackQueue
     }
     
-    private static let privateShared: Session = {
+    /// Returns a default `Session`. A global constant `APIKit` is a shortcut of `Session.default`.
+    open static let `default` = Session()
+    
+    // Shared session for class methods
+    private convenience init() {
         let configuration = URLSessionConfiguration.default
         let adapter = URLSessionAdapter(configuration: configuration)
-        return Session(adapter: adapter)
-    }()
-    
-    open class var shared: Session {
-        return privateShared
-    }
-    
-    @discardableResult
-    open class func send<Req: Request>(_ request: Req, callbackQueue: CallbackQueue? = nil, handler: @escaping (Result<Req.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTask? {
-        return shared.send(request, callbackQueue: callbackQueue, handler: handler)
-    }
-    
-    open class func cancelRequests<Req: Request>(with requestType: Req.Type, passingTest test: @escaping (Req) -> Bool = { _ in true }) {
-        shared.cancelRequests(with: requestType, passingTest: test)
+        self.init(adapter: adapter)
     }
     
     @discardableResult
@@ -197,3 +188,7 @@ open class Session {
 }
 
 extension Array: Error {}
+
+// MARK: - Default SporeNetworking instance
+
+public let Spore = Session.default

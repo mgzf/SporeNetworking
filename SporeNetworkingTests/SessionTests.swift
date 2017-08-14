@@ -238,7 +238,7 @@ class SessionTests: XCTestCase {
 
     // MARK: Class methods
     func testSharedSession() {
-        XCTAssert(Session.shared === Session.shared)
+        XCTAssert(Spore === Session.default)
     }
 
     func testSubclassClassMethods() {
@@ -247,7 +247,7 @@ class SessionTests: XCTestCase {
 
             var functionCallFlags = [String: Bool]()
 
-            override class var shared: Session {
+            class var shared: Session {
                 return testSesssion
             }
 
@@ -262,8 +262,8 @@ class SessionTests: XCTestCase {
         }
 
         let testSession = SessionSubclass.testSesssion
-        SessionSubclass.send(TestRequest())
-        SessionSubclass.cancelRequests(with: TestRequest.self)
+        SessionSubclass.shared.send(TestRequest())
+        SessionSubclass.shared.cancelRequests(with: TestRequest.self)
 
         XCTAssertEqual(testSession.functionCallFlags["send(_:callbackQueue:handler:)"], true)
         XCTAssertEqual(testSession.functionCallFlags["cancelRequests(with:passingTest:)"], true)
