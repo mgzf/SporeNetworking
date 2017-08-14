@@ -40,10 +40,6 @@ public protocol Request: CustomDebugStringConvertible, Interceptable, RequestSer
 
 public extension Request {
     
-    var method: HTTPMethod {
-        return .post
-    }
-    
     var dataParser: DataParser {
         return JSONDataParser(readingOptions: [])
     }

@@ -23,7 +23,7 @@ public extension RequestSerializable where Self: SporeNetworking.Request {
             throw RequestError.invalidBaseURL(baseURL)
         }
         
-        var urlRequest: URLRequest = URLRequest.init(url: url, cachePolicy: .useProtocolCachePolicy, timeoutInterval: 10.0)
+        var urlRequest: URLRequest = URLRequest(url: url)
         
         urlRequest.httpMethod = method.rawValue
         
@@ -51,6 +51,6 @@ public extension RequestSerializable where Self: SporeNetworking.Request {
             urlRequest.setValue(value, forHTTPHeaderField: key)
         }
         
-        return try verification(request: urlRequest)
+        return (try intercept(urlRequest: urlRequest) as URLRequest)
     }
 }

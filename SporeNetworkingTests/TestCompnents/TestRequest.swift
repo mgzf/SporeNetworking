@@ -35,9 +35,10 @@ struct TestRequest: Request {
     var headerFields: [String: String]
     let dataParser: DataParser = JSONDataParser(readingOptions: [])
     let interceptURLRequest: (URLRequest) throws -> URLRequest
+
     
-    func verification(request: URLRequest) throws -> URLRequest {
-        return try interceptURLRequest(request)
+    func intercept(urlRequest: URLRequest) throws -> URLRequest {
+        return try interceptURLRequest(urlRequest)
     }
     
     func process(parsedResult: Any, urlResponse: HTTPURLResponse) throws -> Any {

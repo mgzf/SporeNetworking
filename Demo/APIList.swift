@@ -27,6 +27,10 @@ final class MogoAPIs {
     
     struct HotBusinessAreaAPI: MogoAPIRequest {
         
+        var method: HTTPMethod {
+            return .post
+        }
+        
         typealias Response = BusinessArea
         
         var isMock: Bool = false
