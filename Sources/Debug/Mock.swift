@@ -15,7 +15,7 @@ public enum MockedType {
 
 public protocol Mocked {
     
-    var isMock: Bool { get }
+    var isMock: Bool { get set }
     
     var fileName: String { get }
     var type: MockedType { get }

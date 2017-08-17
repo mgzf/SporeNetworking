@@ -11,6 +11,9 @@ import SporeNetworking
 
 struct TestRequest: Request {
     
+    var isMock: Bool = false
+
+    
     var absoluteURL: URL? {
         let urlRequest = try? buildURLRequest()
         return urlRequest?.url

@@ -177,6 +177,8 @@ class SessionTests: XCTestCase {
     }
 
     struct AnotherTestRequest: Request {
+        var isMock: Bool = false
+
         typealias Response = Dictionary<String, Any>
 
         var baseURL: URL {

@@ -28,7 +28,7 @@ open class Session {
     }
     
     @discardableResult
-    open func send<T: Request>(_ request: T, callbackQueue: CallbackQueue? = nil, handler: @escaping (Result<T.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTask? {
+    open func send<T: SporeNetworking.Request>(_ request: T, callbackQueue: CallbackQueue? = nil, handler: @escaping (Result<T.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTask? {
         
         let callbackQueue = callbackQueue ?? self.callbackQueue
         
@@ -36,7 +36,7 @@ open class Session {
         do {
             urlRequest = try request.buildURLRequest()
         } catch {
-            CallbackQueue.main.execute {
+            callbackQueue.execute {
                 let e = SessionTaskError.requestError(error)
                 request.handle(error: e)
                 handler(Result.failure(e))
@@ -77,7 +77,7 @@ open class Session {
             return nil
         } else {
             let task: SessionTask = adapter.createTask(with: urlRequest) {
-                (data: Data?, urlResponse: URLResponse?, error: Error?) -> Void in
+                (data, urlResponse, error) -> Void in
                 
                 let result: Result<T.Response, SessionTaskError>
                 
@@ -89,8 +89,7 @@ open class Session {
                 case (let data?, let urlResponse as HTTPURLResponse, _):
                     let response: T.Response
                     do {
-                        response = try request.parse(data: data as Data, urlResponse: urlResponse)
-                        result = .success(response)
+                        result = .success(try request.parse(data: data as Data, urlResponse: urlResponse))
                     } catch {
                         result = .failure(.responseError(error))
                     }
@@ -118,26 +117,24 @@ open class Session {
     
     open func cancelRequests<T: Request>(with requestTyle: T.Type, passingTest test: @escaping (T) -> Bool = { _ in true }) -> Void {
         
-        adapter.getTasks { [weak self] (sessionTaskList: [SessionTask]) in
+        adapter.getTasks { [weak self] (sessionTaskList) in
             
-            sessionTaskList.filter({ (task: SessionTask) -> Bool in
+            sessionTaskList.filter({ (task) -> Bool in
                 if let req = self?.getRequest(for: task) as T? {
                     return test(req)
                 } else {
                     return false
                 }
-            }).forEach({ (task: SessionTask) in
-                task.cancel()
-            })
+            }).forEach() { $0.cancel() }
         }
     }
     
-    private func bindSessinTask<Req: Request>(_ sessionTask: SessionTask, withRequest request: Req) {
+    private func bindSessinTask<T: Request>(_ sessionTask: SessionTask, withRequest request: T) {
         objc_setAssociatedObject(sessionTask, &taskRequestKey, request, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
-    private func getRequest<Req: Request>(for sessionTask: SessionTask) -> Req? {
-        return objc_getAssociatedObject(sessionTask, &taskRequestKey) as? Req
+    private func getRequest<T: Request>(for sessionTask: SessionTask) -> T? {
+        return objc_getAssociatedObject(sessionTask, &taskRequestKey) as? T
     }
     
     open func multipleSend<T: Request>(_ requests: T..., callbackQueue: CallbackQueue? = nil, handle: @escaping (Result<[Any?], [Any?]>) -> Void ) -> [SessionTask?] {
