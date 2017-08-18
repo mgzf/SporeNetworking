@@ -28,7 +28,7 @@ open class Session {
     }
     
     @discardableResult
-    open func send<T: SporeNetworking.Request>(_ request: T, callbackQueue: CallbackQueue? = nil, handler: @escaping (Result<T.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTask? {
+    open func send<Request: SporeNetworking.Request>(_ request: Request, callbackQueue: CallbackQueue? = nil, handler: @escaping (Result<Request.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTask? {
         
         let callbackQueue = callbackQueue ?? self.callbackQueue
         
@@ -46,7 +46,7 @@ open class Session {
         
         if request.isMock {
             
-            let result: Result<T.Response, SessionTaskError>
+            let result: Result<Request.Response, SessionTaskError>
             
             let (data, urlResponse, error): (Data?, HTTPURLResponse, Error?) = request.generateData()
             
@@ -54,10 +54,8 @@ open class Session {
             case (_, _, let error?):
                 result = .failure(.connectionError(error))
             case (let data?, let urlResponse, _):
-                let response: T.Response
                 do {
-                    response = try request.parse(data: data as Data, urlResponse: urlResponse)
-                    result = .success(response)
+                    result = .success(try request.parse(data: data as Data, urlResponse: urlResponse))
                 } catch {
                     result = .failure(.responseError(error))
                 }
@@ -79,21 +77,17 @@ open class Session {
             let task: SessionTask = adapter.createTask(with: urlRequest) {
                 (data, urlResponse, error) -> Void in
                 
-                let result: Result<T.Response, SessionTaskError>
+                let result: Result<Request.Response, SessionTaskError>
                 
                 switch (data, urlResponse, error) {
-                    
                 case (_, _, let error?):
                     result = .failure(.connectionError(error))
-                    
                 case (let data?, let urlResponse as HTTPURLResponse, _):
-                    let response: T.Response
                     do {
                         result = .success(try request.parse(data: data as Data, urlResponse: urlResponse))
                     } catch {
                         result = .failure(.responseError(error))
                     }
-                    
                 default:
                     result = .failure(.responseError(ResponseError.nonHTTPURLResponse(urlResponse)))
                 }
@@ -115,29 +109,30 @@ open class Session {
         }
     }
     
-    open func cancelRequests<T: Request>(with requestTyle: T.Type, passingTest test: @escaping (T) -> Bool = { _ in true }) -> Void {
+    open func cancelRequests<Request: SporeNetworking.Request>(with requestTyle: Request.Type, passingTest test: @escaping (Request) -> Bool = { _ in true }) -> Void {
         
         adapter.getTasks { [weak self] (sessionTaskList) in
-            
-            sessionTaskList.filter({ (task) -> Bool in
-                if let req = self?.getRequest(for: task) as T? {
-                    return test(req)
-                } else {
-                    return false
+            sessionTaskList
+                .filter { (task) -> Bool in
+                    if let request = self?.getRequest(for: task) as Request? {
+                        return test(request)
+                    } else {
+                        return false
+                    }
                 }
-            }).forEach() { $0.cancel() }
+                .forEach { $0.cancel() }
         }
     }
     
-    private func bindSessinTask<T: Request>(_ sessionTask: SessionTask, withRequest request: T) {
+    private func bindSessinTask<Request: SporeNetworking.Request>(_ sessionTask: SessionTask, withRequest request: Request) {
         objc_setAssociatedObject(sessionTask, &taskRequestKey, request, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
     
-    private func getRequest<T: Request>(for sessionTask: SessionTask) -> T? {
-        return objc_getAssociatedObject(sessionTask, &taskRequestKey) as? T
+    private func getRequest<Request: SporeNetworking.Request>(for sessionTask: SessionTask) -> Request? {
+        return objc_getAssociatedObject(sessionTask, &taskRequestKey) as? Request
     }
     
-    open func multipleSend<T: Request>(_ requests: T..., callbackQueue: CallbackQueue? = nil, handle: @escaping (Result<[Any?], [Any?]>) -> Void ) -> [SessionTask?] {
+    open func multipleSend<Request: SporeNetworking.Request>(_ requests: Request..., callbackQueue: CallbackQueue? = nil, handle: @escaping (Result<[Any?], [Any?]>) -> Void ) -> [SessionTask?] {
         
         let callbackQueue: CallbackQueue = callbackQueue ?? self.callbackQueue
         
@@ -152,11 +147,11 @@ open class Session {
         for i in 0..<requests.count {
             
             group.enter()
-            let req: T = requests[i]
+            let request: Request = requests[i]
             
             let index: Int = i
-            let session = self.send(req, callbackQueue: callbackQueue, handler: {
-                (result: Result<T.Response, SessionTaskError>) in
+            let session = self.send(request, callbackQueue: callbackQueue, handler: {
+                (result: Result<Request.Response, SessionTaskError>) in
                 switch result {
                 case .success(let resultModel):
                     models.replaceSubrange(index..<index+1, with: [resultModel])
