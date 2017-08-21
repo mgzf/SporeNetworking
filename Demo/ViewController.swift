@@ -16,7 +16,6 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         
         var loadArea: MogoAPIs.HotBusinessAreaAPI = MogoAPIs.HotBusinessAreaAPI.init()
-        loadArea.isMock = false
         
         let _ = Spore.send(loadArea, callbackQueue: .main) {
             (result: Result<BusinessArea, SessionTaskError>) in
