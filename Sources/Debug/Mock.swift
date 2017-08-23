@@ -9,16 +9,16 @@
 import Foundation
 
 public enum MockedType {
-    case plist
+    case plist(String)
     case textFile
 }
 
 public protocol Mocked {
     
     var isMock: Bool { get }
+    var bundle: Bundle { get }
     
-    var fileName: String { get }
-    var type: MockedType { get }
+    var mockType: MockedType { get }
     
     func generateData() -> (Data?, HTTPURLResponse, Error?)
 }
@@ -29,26 +29,30 @@ public extension Mocked where Self: Request {
         return false
     }
     
-    var fileName: String {
-        fatalError("You must set mocked-file name")
+    var bundle: Bundle {
+        return Bundle.main
     }
     
-    var type: MockedType {
-        return MockedType.plist
+    var mockType: MockedType {
+        fatalError("You must set mocked-file name")
     }
     
     func generateData() -> (Data?, HTTPURLResponse, Error?) {
         
-        let name: String = fileName
+        var name: String = ""
         var resourceType: String = ""
-        switch type {
-        case .plist:
+        switch mockType {
+        case .plist(let fileName):
+            guard !fileName.isEmpty else {
+                fatalError("You must set mocked-file name")
+            }
+            name = fileName
             resourceType = "plist"
         case .textFile:
             resourceType = "text"
         }
         
-        guard let path = Bundle.main.path(forResource: name, ofType: resourceType) else {
+        guard let path = bundle.path(forResource: name, ofType: resourceType) else {
             return (nil, HTTPURLResponse.init(), MockedError.plistNotFound)
         }
         

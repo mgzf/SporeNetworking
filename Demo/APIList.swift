@@ -33,7 +33,9 @@ final class MogoAPIs {
         
         typealias Response = BusinessArea
         
-        var fileName: String = "HotBusinessAreaAPI"
+        var isMock: Bool = false
+        
+        var mockType: MockedType = .plist("HotBusinessAreaAPI")
         
         var lat: Float = 31.232046440972223
         var lng: Float = 121.45450792100695
