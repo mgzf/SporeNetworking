@@ -46,32 +46,36 @@ open class Session {
         
         if request.isMock {
             
-            let result: Result<Request.Response, SessionTaskError>
-            
-            let (data, urlResponse, error): (Data?, HTTPURLResponse, Error?) = request.generateData()
-            
-            switch (data, urlResponse, error) {
-            case (_, _, let error?):
-                result = .failure(.connectionError(error))
-            case (let data?, let urlResponse, _):
-                do {
-                    result = .success(try request.parse(data: data as Data, urlResponse: urlResponse))
-                } catch {
-                    result = .failure(.responseError(error))
+            DispatchQueue.global(qos: .default).async {
+                
+                let result: Result<Request.Response, SessionTaskError>
+                
+                let (data, urlResponse, error): (Data?, HTTPURLResponse, Error?) = request.generateData()
+                
+                sleep(UInt32(request.delay))
+                
+                switch (data, urlResponse, error) {
+                case (_, _, let error?):
+                    result = .failure(.connectionError(error))
+                case (let data?, let urlResponse, _):
+                    do {
+                        result = .success(try request.parse(data: data as Data, urlResponse: urlResponse))
+                    } catch {
+                        result = .failure(.responseError(error))
+                    }
+                default:
+                    result = .failure(.responseError(ResponseError.nonHTTPURLResponse(urlResponse)))
                 }
-            default:
-                result = .failure(.responseError(ResponseError.nonHTTPURLResponse(urlResponse)))
-            }
-            
-            callbackQueue.execute {
-                switch result {
-                case .failure(let e):
-                    request.handle(error: e)
-                default: break
+                
+                callbackQueue.execute {
+                    switch result {
+                    case .failure(let e):
+                        request.handle(error: e)
+                    default: break
+                    }
+                    handler(result)
                 }
-                handler(result)
             }
-            
             return nil
         } else {
             let task: SessionTask = adapter.createTask(with: urlRequest) {

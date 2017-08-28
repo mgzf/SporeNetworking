@@ -17,6 +17,7 @@ public protocol Mocked {
     
     var isMock: Bool { get }
     var bundle: Bundle { get }
+    var delay: Int { get }
     
     var mockType: MockedType { get }
     
@@ -31,6 +32,10 @@ public extension Mocked where Self: Request {
     
     var bundle: Bundle {
         return Bundle.main
+    }
+    
+    var delay: Int {
+        return Int(arc4random_uniform(5))
     }
     
     var mockType: MockedType {
