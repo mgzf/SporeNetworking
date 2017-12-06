@@ -3,11 +3,32 @@ import Result
 
 private var taskRequestKey: Void?
 
+// Session networking call bacl
+// 某个 session 中的网络请求回调
+public protocol SessionDelegate: NSObjectProtocol {
+    // Will send request
+    // 即将发送某个网络请求
+    func willResumeRequest(_ request: URLRequest)
+    
+    // Will reseive response, whatever success or failure
+    // 收到网络请求的 response 后回调, 不论网络请求是成功或失败
+    func receiveResponse(_ response: URLResponse?)
+    
+    // Will reseive succssed response
+    // 收到成功的网络请求回调
+    func successRequest(_ request: URLRequest, response: URLResponse?, data: Data?, dataObject: Any?)
+    
+    // Will resquest failure
+    // 收到失败的网络请求
+    func failureRequest(_ request: URLRequest, response: URLResponse?, error: Error?)
+}
+
 open class Session {
     
     // Adapter that send request
     // 真正网络请求的发起由 Adapter 发起, 具体实现由业务层决定
     public let adapter: SessionAdapter // AF or AL
+    public weak var delegate: SessionDelegate?
     
     // Callback Queue, default is Main Queue
     public let callbackQueue: CallbackQueue
@@ -44,6 +65,7 @@ open class Session {
             return nil
         }
         
+        self.delegate?.willResumeRequest(urlRequest)
         if request.isMock {
             
             DispatchQueue.global(qos: .default).async {
@@ -53,6 +75,10 @@ open class Session {
                 let (data, urlResponse, error): (Data?, HTTPURLResponse, Error?) = request.generateData()
                 
                 sleep(UInt32(request.delay))
+                
+                callbackQueue.execute {
+                    self.delegate?.receiveResponse(urlResponse)
+                }
                 
                 switch (data, urlResponse, error) {
                 case (_, _, let error?):
@@ -70,8 +96,10 @@ open class Session {
                 callbackQueue.execute {
                     switch result {
                     case .failure(let e):
+                        self.delegate?.failureRequest(urlRequest, response: urlResponse, error: e)
                         request.handle(error: e)
-                    default: break
+                    case .success(let obj):
+                        self.delegate?.successRequest(urlRequest, response: urlResponse, data: data, dataObject: obj)
                     }
                     handler(result)
                 }
@@ -83,14 +111,18 @@ open class Session {
                 
                 let result: Result<Request.Response, SessionTaskError>
                 
+                callbackQueue.execute {
+                    self.delegate?.receiveResponse(urlResponse)
+                }
+                
                 switch (data, urlResponse, error) {
                 case (_, _, let error?):
                     result = .failure(.connectionError(error))
                 case (let data?, let urlResponse as HTTPURLResponse, _):
                     do {
                         result = .success(try request.parse(data: data as Data, urlResponse: urlResponse))
-                    } catch {
-                        result = .failure(.responseError(error))
+                    } catch let parseError {
+                        result = .failure(.responseError(parseError))
                     }
                 default:
                     result = .failure(.responseError(ResponseError.nonHTTPURLResponse(urlResponse)))
@@ -99,8 +131,10 @@ open class Session {
                 callbackQueue.execute {
                     switch result {
                     case .failure(let e):
+                        self.delegate?.failureRequest(urlRequest, response: urlResponse, error: e)
                         request.handle(error: e)
-                    default: break
+                    case .success(let obj):
+                        self.delegate?.successRequest(urlRequest, response: urlResponse, data: data, dataObject: obj)
                     }
                     handler(result)
                 }
