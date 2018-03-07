@@ -9,6 +9,13 @@
 import Foundation
 
 public protocol RequestSerializable {
+    
+    /// joining together baseURL and path
+    ///
+    /// - Returns: URL
+    /// - Throws: RequestError
+    func generateURL() -> URL
+    
     /// Builds `URLRequest` from `Request`.
     /// - Throws: `RequestError`, `Error`
     func buildURLRequest(encoding: URLEncoding) throws -> URLRequest
@@ -16,9 +23,15 @@ public protocol RequestSerializable {
 
 public extension RequestSerializable where Self: SporeNetworking.Request {
     
+    func generateURL() -> URL {
+        let url = path.isEmpty ? baseURL : baseURL.appendingPathComponent(path)
+        return url
+    }
+    
     func buildURLRequest(encoding: URLEncoding = URLEncoding.default) throws -> URLRequest {
         
-        let url = path.isEmpty ? baseURL : baseURL.appendingPathComponent(path)
+        let url: URL = generateURL()
+        
         guard var compnents = URLComponents.init(url: url, resolvingAgainstBaseURL: true) else {
             throw RequestError.invalidBaseURL(baseURL)
         }
