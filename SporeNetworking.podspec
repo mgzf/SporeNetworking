@@ -21,11 +21,11 @@ Pod::Spec.new do |s|
 SporeNetworing is POP-Networking-framework.
                        DESC
 
-  s.homepage         = 'https://github.com/mgzf/SporeNetworking.git'
+  s.homepage         = 'http://git.mogo.com/NeXTPod/SporeNetworking'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'loohawe@gamil.com' => 'luhao@mogoroom.com' }
-  s.source           = { :git => 'https://github.com/mgzf/SporeNetworking.git', :tag => s.version.to_s }
+  s.source           = { :git => 'git@git.mogo.com:NeXTPod/SporeNetworking.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/loohawe'
 
   s.ios.deployment_target = '8.0'
